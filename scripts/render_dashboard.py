@@ -44,14 +44,31 @@ def parse_ts(ts: str) -> datetime | None:
 def main() -> int:
     contract = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))["dashboard"]
     panels = {p["id"]: p for p in contract["panels"]}
+    window_min = int(contract["time_range_minutes"])
     lines = [
         json.loads(line)
         for line in LOG_PATH.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-    req = [e for e in lines if e.get("event") == "request_received"]
-    res = [e for e in lines if e.get("event") == "response_sent"]
-    fail = [e for e in lines if e.get("event") == "request_failed"]
+    # Loc dung cua so trailing time_range_minutes theo contract (mac dinh 60 phut):
+    # window_end = ts lon nhat cua request/response, window_start = end - window.
+    scoped = [e for e in lines if e.get("event") in ("request_received", "response_sent", "request_failed")]
+    end = max((parse_ts(str(e.get("ts", ""))) for e in scoped), default=None)
+    window_start = window_end = None
+    if end is not None:
+        from datetime import timedelta
+
+        window_end = end
+        window_start = end - timedelta(minutes=window_min)
+
+        def in_window(e: dict) -> bool:
+            ts = parse_ts(str(e.get("ts", "")))
+            return ts is not None and window_start <= ts <= window_end
+
+        scoped = [e for e in scoped if in_window(e)]
+    req = [e for e in scoped if e.get("event") == "request_received"]
+    res = [e for e in scoped if e.get("event") == "response_sent"]
+    fail = [e for e in scoped if e.get("event") == "request_failed"]
 
     lat = [float(e.get("latency_ms", 0)) for e in res]
     ttf = [float(e.get("ttft_ms", 0)) for e in res]
@@ -68,10 +85,9 @@ def main() -> int:
         return ts.strftime("%Y-%m-%dT%H:%M") if ts else "unknown"
 
     traffic_by_min = dict(sorted(Counter(minute_key(e) for e in req).items()))
-    span_min = max(1, len(traffic_by_min))
     traffic = {
         "count": len(req),
-        "rate_per_minute": round(len(req) / span_min, 3),
+        "rate_per_minute": round(len(req) / max(1, window_min), 3),
         "by_minute": traffic_by_min,
     }
 
@@ -118,7 +134,13 @@ def main() -> int:
 
     values = {
         "source": "data/logs.jsonl",
-        "lines": len(lines),
+        "lines_total": len(lines),
+        "lines_in_window": len(scoped),
+        "time_range_minutes": window_min,
+        "window_utc": {
+            "start": window_start.isoformat() if window_start else None,
+            "end": window_end.isoformat() if window_end else None,
+        },
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "latency": latency,
         "traffic": traffic,
@@ -150,8 +172,8 @@ def main() -> int:
 table{{border-collapse:collapse;width:100%}}td,th{{border:1px solid #ccc;padding:4px 8px;font-size:13px}}
 code{{background:#f4f4f4;padding:1px 4px}}</style></head><body>
 <h1>{contract['title']}</h1>
-<p>Nguồn: <code>data/logs.jsonl</code> ({len(lines)} dòng, {len(req)} request_received, {len(res)} response_sent, {len(fail)} request_failed).
-Time range: {contract['time_range_minutes']} phút · Refresh: {contract['refresh_seconds']}s · Tạo lúc: {values['generated_at']}</p>
+<p>Nguồn: <code>data/logs.jsonl</code> ({len(scoped)}/{len(lines)} dòng trong cửa sổ, {len(req)} request_received, {len(res)} response_sent, {len(fail)} request_failed).
+Cửa sổ: {values['window_utc']['start']} → {values['window_utc']['end']} ({window_min} phút trailing theo contract) · Refresh: {contract['refresh_seconds']}s · Tạo lúc: {values['generated_at']}</p>
 <h2>Contract (config/dashboard.yaml)</h2>
 <table><tr><th>ID</th><th>Panel</th><th>Đơn vị</th><th>Threshold</th></tr>{rows}</table>
 <div class="grid">
@@ -159,7 +181,7 @@ Time range: {contract['time_range_minutes']} phút · Refresh: {contract['refres
 <p>P50 <b>{latency['p50']}</b> · P95 <b>{latency['p95']}</b> · P99 <b>{latency['p99']}</b> · TTFT P95 <b>{latency['ttft_p95']}</b> (n={latency['n']})</p>
 <p class="{'pass' if latency['p95'] <= panels['latency']['threshold']['value'] else 'fail'}">{check('latency', 'p95', latency['p95'])}</p></div>
 <div class="panel"><h3>2. Request traffic (requests_per_minute)</h3>
-<p>Tổng <b>{traffic['count']}</b> · Rate <b>{traffic['rate_per_minute']}</b>/phút trên {span_min} phút có request</p>
+<p>Tổng <b>{traffic['count']}</b> · Rate <b>{traffic['rate_per_minute']}</b>/phút trên cửa sổ {window_min} phút</p>
 <p class="{'pass' if traffic['rate_per_minute'] >= panels['traffic']['threshold']['value'] else 'fail'}">{check('traffic', 'rate_per_minute', traffic['rate_per_minute'])}</p>
 <p>Theo phút: <code>{json.dumps(traffic['by_minute'])}</code></p></div>
 <div class="panel"><h3>3. Error rate and retrieval success (percent)</h3>
@@ -179,7 +201,7 @@ Time range: {contract['time_range_minutes']} phút · Refresh: {contract['refres
 <p>Fast successful (latency ≤ 3000ms): <b>{sli['good']}/{sli['total']} = {sli['sli_pct']}%</b> (xem chi tiết tại <code>config/slo.yaml</code>).</p>
 </body></html>"""
     OUT_HTML.write_text(html, encoding="utf-8")
-    print(f"N={len(lines)} req={len(req)} res={len(res)} fail={len(fail)}")
+    print(f"window={values['window_utc']['start']}..{values['window_utc']['end']} scoped={len(scoped)}/{len(lines)} req={len(req)} res={len(res)} fail={len(fail)}")
     print(f"latency p50/p95/p99={latency['p50']}/{latency['p95']}/{latency['p99']} ttft_p95={latency['ttft_p95']}")
     print(f"error_rate={errors['error_rate_pct']}% retrieval_success={errors['tool_success_rate_pct']}%")
     print(f"cost_total={cost['total']} tokens_in={tokens['tokens_in_total']} tokens_out={tokens['tokens_out_total']} quality={quality['mean']}")

@@ -44,7 +44,7 @@ Mỗi alert dựa trên triệu chứng người dùng hoặc SLO, không dựa 
 - Điều kiện và thời gian duy trì: nhịp `sum(cost_usd)` vượt pace ngân sách 2.5 USD/ngày HOẶC `mean(quality_score) < 0.75` liên tục 15 phút.
 - Ảnh hưởng tới người dùng: chi phí bùng nổ hoặc câu trả lời kém chất lượng; tương ứng practice `cost_spike`.
 - Ba bước kiểm tra đầu tiên:
-  1. Mở dashboard panel Cost/Tokens/Quality, so `sum(cost_usd)`, `tokens_out` và `mean(quality_score)` với baseline (sau CP3: cost $0.049233/25 req, quality 0.872).
+  1. Mở dashboard panel Cost/Tokens/Quality, so `sum(cost_usd)`, `tokens_out` và `mean(quality_score)` với baseline cửa sổ 60 phút (cost $0.026769/15 req, quality 0.8667).
   2. Lọc `response_sent` có `tokens_out`/`cost_usd` cao bất thường, lấy `correlation_id`.
   3. Mở trace cùng ID, kiểm tra generation `usage_details`/`cost_details` và prompt version đang dùng.
 - Mitigation tạm thời: giới hạn độ dài output/max tokens, rà soát prompt version mới deploy, rollback prompt nếu cần và báo llm-ops.

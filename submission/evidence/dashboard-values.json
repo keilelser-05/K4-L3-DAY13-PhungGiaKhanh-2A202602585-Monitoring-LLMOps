@@ -1,19 +1,24 @@
 {
   "source": "data/logs.jsonl",
-  "lines": 62,
-  "generated_at": "2026-09-29T09:49:35.906730+00:00",
+  "lines_total": 62,
+  "lines_in_window": 30,
+  "time_range_minutes": 60,
+  "window_utc": {
+    "start": "2026-09-29T08:48:38.768105+00:00",
+    "end": "2026-09-29T09:48:38.768105+00:00"
+  },
+  "generated_at": "2026-09-29T10:41:28.306533+00:00",
   "latency": {
-    "p50": 404.0,
-    "p95": 2654.6,
-    "p99": 3533.6,
+    "p50": 152.0,
+    "p95": 3001.8,
+    "p99": 3649.2,
     "ttft_p95": 50.0,
-    "n": 25
+    "n": 15
   },
   "traffic": {
-    "count": 25,
-    "rate_per_minute": 8.333,
+    "count": 15,
+    "rate_per_minute": 0.25,
     "by_minute": {
-      "2026-09-29T07:50": 10,
       "2026-09-29T09:24": 10,
       "2026-09-29T09:48": 5
     }
@@ -21,29 +26,28 @@
   "errors": {
     "error_rate_pct": 0.0,
     "failed": 0,
-    "received": 25,
+    "received": 15,
     "count_by_error_type": {},
     "tool_success_rate_pct": 100.0
   },
   "cost": {
-    "total": 0.049233,
+    "total": 0.026769,
     "sum_by_minute": {
-      "2026-09-29T07:50": 0.022464,
       "2026-09-29T09:24": 0.017229,
       "2026-09-29T09:48": 0.00954
     }
   },
   "tokens": {
-    "tokens_in_total": 851,
-    "tokens_out_total": 3112
+    "tokens_in_total": 513,
+    "tokens_out_total": 1682
   },
   "quality": {
-    "mean": 0.872,
-    "n": 25
+    "mean": 0.8667,
+    "n": 15
   },
   "sli": {
-    "good": 24,
-    "total": 25,
-    "sli_pct": 96.0
+    "good": 14,
+    "total": 15,
+    "sli_pct": 93.333
   }
 }

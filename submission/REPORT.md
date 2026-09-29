@@ -42,7 +42,7 @@
 | `pytest` | — | 26 passed (`evidence/01-pytest.txt`) | |
 | Số traces hợp lệ | — | 29 trace đầy đủ (root `lab-agent-run` + child `retrieval` + `generation`) trên tổng 50 root observations trong project cá nhân (yêu cầu ≥10) | đếm qua observations API v2 |
 | Số PII leak | — | 0 (validator + quét `submission/`, `config/slo.yaml`, `config/alert_rules.yaml`, `docs/alerts.md`) | |
-| Latency P95 / TTFT P95 | 1713.1 / 50.0 (20 req trước challenge) | 2654.6 / 50.0 (sau challenge CP3) | P95 tăng do `rag_slow` |
+| Latency P95 / TTFT P95 | 1713.1 / 50.0 (20 req, toàn log trước challenge) | 3001.8 / 50.0 (15 req trong cửa sổ 60 phút) | P95 tăng do `rag_slow` |
 | Retrieval success rate | 100% | 100% | 0 `request_failed` |
 
 ## 4. Logging và PII
@@ -65,9 +65,9 @@
 
 ## 6. Dashboard, SLO và alerts
 
-- **Dashboard và sáu panel:** nguồn `data/logs.jsonl` thật (25 req_received/25 response_sent/0 request_failed, đã gồm 5 req challenge CP3). Render local: `python scripts/render_dashboard.py` → `evidence/dashboard.html` + `evidence/dashboard-values.json` (xem: `docs/DASHBOARD_LOCAL.md`). 6 panel đúng `config/dashboard.yaml`: latency P50 404.0/P95 2654.6/P99 3533.6/TTFT P95 50.0ms; traffic 25 req; errors 0.0% + retrieval success 100.0%; cost $0.049233; tokens in 851/out 3112; quality mean 0.872. Validator `HỢP LỆ: 6/6 panel` (`evidence/03-dashboard-validator.txt`). Ảnh runtime: `evidence/dashboard.png`.
-- **SLO và lý do chọn:** giữ `fast_successful_requests` 99.5%/28d (`config/slo.yaml`); baseline trước challenge đạt SLI 100% (20/20 latency≤3000ms). Sau challenge CP3, SLI cửa sổ đo là 96.0% (24/25, 1 req 3811ms vượt ngưỡng) — vượt error budget 0.5%, đúng bản chất incident `rag_slow` và là bằng chứng alert `SlowResponsesHighP95` cần thiết.
-- **Cách tính error budget:** budget 0.5% = tối đa 5 bad/1000 req (50 bad/10000 req/28 ngày). Trên mẫu đo 25 request, mức cho phép chỉ 0.125 bad nên 1 request lỗi (4%) đã vượt ngân sách của mẫu này.
+- **Dashboard và sáu panel:** nguồn `data/logs.jsonl` thật, lọc cửa sổ trailing 60 phút theo contract (`08:48:38Z → 09:48:38Z`, 30/62 dòng, 15 req_received/15 response_sent/0 request_failed). Render local: `python scripts/render_dashboard.py` → `evidence/dashboard.html` + `evidence/dashboard-values.json` (xem: `docs/DASHBOARD_LOCAL.md`). 6 panel đúng `config/dashboard.yaml`: latency P50 152.0/P95 3001.8/P99 3649.2/TTFT P95 50.0ms (P95 vượt nhẹ ngưỡng 3000ms do dư âm `rag_slow`); traffic 15 req, rate 0.25/phút (dưới ngưỡng 1/phút vì load chạy theo đợt); errors 0.0% + retrieval success 100.0%; cost $0.026769; tokens in 513/out 1682; quality mean 0.8667. Validator `HỢP LỆ: 6/6 panel` (`evidence/03-dashboard-validator.txt`). Ảnh runtime: `evidence/dashboard.png` (chụp lại từ HTML mới).
+- **SLO và lý do chọn:** giữ `fast_successful_requests` 99.5%/28d (`config/slo.yaml`); baseline trước challenge đạt SLI 100% (20/20 latency≤3000ms). Trong cửa sổ dashboard 60 phút sau challenge, SLI là 93.3% (14/15, 1 req 3811ms vượt ngưỡng) — vượt error budget 0.5%, đúng bản chất incident `rag_slow` và là bằng chứng alert `SlowResponsesHighP95` cần thiết.
+- **Cách tính error budget:** budget 0.5% = tối đa 5 bad/1000 req (50 bad/10000 req/28 ngày). Trong cửa sổ 60 phút (15 request), mức cho phép chỉ 0.075 bad nên 1 request lỗi (6.7%) đã vượt ngân sách của mẫu này.
 - **Ba alert và runbook tương ứng:** `config/alert_rules.yaml` — `SlowResponsesHighP95` (warning, P95>3000ms giữ 5m, owner backend-oncall), `RetrievalFailuresHigh` (critical, error_rate>2% hoặc retrieval_success<90% giữ 5m, owner backend-oncall), `CostQualityDegraded` (warning, vượt pace 2.5 USD/ngày hoặc quality<0.75 giữ 15m, owner llm-ops); cả ba kênh Slack `#l3a-incidents`, runbook tại `docs/alerts.md#alert-1..3`.
 
 ## 7. Điều tra challenge
@@ -87,7 +87,7 @@
 - **Một lỗi/blocker đã gặp:** API chạy thiếu `--env-file .env` nên `/health` báo `tracing_enabled: false` — log vẫn ghi nhưng không có trace; tiếp đó Langfuse trả `410 LEGACY_API_UNAVAILABLE` cho endpoint traces cũ.
 - **Cách tìm nguyên nhân và xử lý:** đối chiếu `/health` giữa 2 cách chạy API rồi cố định lệnh trong `docs/DASHBOARD_LOCAL.md`; chuyển truy vấn trace sang observations API v2 (`trace_id` + `correlation_id` trong metadata).
 - **Cách hiểu luồng Metrics → Logs → Traces:** dashboard chỉ ra latency tăng bất thường trong khoảng thời gian CP3 (2652–3811ms; request 3811ms vượt ngưỡng 3000ms trong khi P95 cửa sổ là 2654.6ms); lọc log theo khoảng đó lấy `correlation_id` bất thường (`req-fb6f1112`); mở trace cùng ID thấy span `retrieval` 2.502s/3.811s là nguyên nhân.
-- **Vai trò của prompt version, token/cost, SLO hoặc rollback trong vận hành LLM:** prompt version cho biết request dùng template nào và rollback an toàn (`production` v2→v1 đã verify); token/cost phát hiện `cost_spike`; SLO 99.5% + error budget biến incident thành con số (CP3: 1/25 bad = 4% vượt budget 0.5%).
+- **Vai trò của prompt version, token/cost, SLO hoặc rollback trong vận hành LLM:** prompt version cho biết request dùng template nào và rollback an toàn (`production` v2→v1 đã verify); token/cost phát hiện `cost_spike`; SLO 99.5% + error budget biến incident thành con số (CP3: 1/15 bad = 6.7% vượt budget 0.5%).
 - **Điều quan trọng nhất đã học:** validator chỉ kiểm tra contract — bằng chứng runtime (trace, log, dashboard có dữ liệu thật) mới chứng minh hệ thống quan sát được.
 - **Hạn chế hoặc phần chưa hoàn thành, nếu có:** project Langfuse hiển thị tên `My Project` thay vì `day13-k4-l3a-2A202602585` (cần đổi/tạo đúng tên nếu quy định chấm tên); README chưa chạy lại từ đầu trên môi trường sạch; URL repo và SHA mới chờ nộp LMS sau commit cuối.
 

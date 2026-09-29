@@ -7,31 +7,31 @@
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:4px 8px;font-size:13px}
 code{background:#f4f4f4;padding:1px 4px}</style></head><body>
 <h1>K4-L3A Day 13 Monitoring & LLMOps</h1>
-<p>Nguồn: <code>data/logs.jsonl</code> (62 dòng, 25 request_received, 25 response_sent, 0 request_failed).
-Time range: 60 phút · Refresh: 30s · Tạo lúc: 2026-09-29T09:49:35.906730+00:00</p>
+<p>Nguồn: <code>data/logs.jsonl</code> (30/62 dòng trong cửa sổ, 15 request_received, 15 response_sent, 0 request_failed).
+Cửa sổ: 2026-09-29T08:48:38.768105+00:00 → 2026-09-29T09:48:38.768105+00:00 (60 phút trailing theo contract) · Refresh: 30s · Tạo lúc: 2026-09-29T10:41:28.306533+00:00</p>
 <h2>Contract (config/dashboard.yaml)</h2>
 <table><tr><th>ID</th><th>Panel</th><th>Đơn vị</th><th>Threshold</th></tr><tr><td>latency</td><td>Latency percentiles and TTFT</td><td>ms</td><td>{'aggregation': 'p95', 'operator': 'lte', 'value': 3000}</td></tr><tr><td>traffic</td><td>Request traffic</td><td>requests_per_minute</td><td>{'aggregation': 'rate_per_minute', 'operator': 'gte', 'value': 1}</td></tr><tr><td>errors</td><td>Error rate and retrieval success</td><td>percent</td><td>{'aggregation': 'error_rate_pct', 'operator': 'lte', 'value': 2}</td></tr><tr><td>cost</td><td>Cost over time</td><td>usd</td><td>{'aggregation': 'total', 'operator': 'lte', 'value': 2.5}</td></tr><tr><td>tokens</td><td>Input and output tokens</td><td>tokens</td><td>{'aggregation': 'sum_by_field', 'operator': 'lte', 'value': 50000}</td></tr><tr><td>quality</td><td>Quality proxy</td><td>score_0_to_1</td><td>{'aggregation': 'mean', 'operator': 'gte', 'value': 0.75}</td></tr></table>
 <div class="grid">
 <div class="panel"><h3>1. Latency percentiles and TTFT (ms)</h3>
-<p>P50 <b>404.0</b> · P95 <b>2654.6</b> · P99 <b>3533.6</b> · TTFT P95 <b>50.0</b> (n=25)</p>
-<p class="pass">ĐẠT (ngưỡng lte 3000)</p></div>
+<p>P50 <b>152.0</b> · P95 <b>3001.8</b> · P99 <b>3649.2</b> · TTFT P95 <b>50.0</b> (n=15)</p>
+<p class="fail">VƯỢT (ngưỡng lte 3000)</p></div>
 <div class="panel"><h3>2. Request traffic (requests_per_minute)</h3>
-<p>Tổng <b>25</b> · Rate <b>8.333</b>/phút trên 3 phút có request</p>
-<p class="pass">ĐẠT (ngưỡng gte 1)</p>
-<p>Theo phút: <code>{"2026-09-29T07:50": 10, "2026-09-29T09:24": 10, "2026-09-29T09:48": 5}</code></p></div>
+<p>Tổng <b>15</b> · Rate <b>0.25</b>/phút trên cửa sổ 60 phút</p>
+<p class="fail">VƯỢT (ngưỡng gte 1)</p>
+<p>Theo phút: <code>{"2026-09-29T09:24": 10, "2026-09-29T09:48": 5}</code></p></div>
 <div class="panel"><h3>3. Error rate and retrieval success (percent)</h3>
-<p>Error rate <b>0.0%</b> (0/25) · Retrieval success <b>100.0%</b> · Breakdown <code>{}</code></p>
+<p>Error rate <b>0.0%</b> (0/15) · Retrieval success <b>100.0%</b> · Breakdown <code>{}</code></p>
 <p class="pass">ĐẠT (ngưỡng lte 2)</p></div>
 <div class="panel"><h3>4. Cost over time (usd)</h3>
-<p>Tổng <b>$0.049233</b></p>
+<p>Tổng <b>$0.026769</b></p>
 <p class="pass">ĐẠT (ngưỡng lte 2.5)</p>
-<p>Theo phút: <code>{"2026-09-29T07:50": 0.022464, "2026-09-29T09:24": 0.017229, "2026-09-29T09:48": 0.00954}</code></p></div>
+<p>Theo phút: <code>{"2026-09-29T09:24": 0.017229, "2026-09-29T09:48": 0.00954}</code></p></div>
 <div class="panel"><h3>5. Input and output tokens (tokens)</h3>
-<p>In <b>851</b> · Out <b>3112</b> · Tổng <b>3963</b></p></div>
+<p>In <b>513</b> · Out <b>1682</b> · Tổng <b>2195</b></p></div>
 <div class="panel"><h3>6. Quality proxy (score_0_to_1)</h3>
-<p>Mean <b>0.872</b> (n=25)</p>
+<p>Mean <b>0.8667</b> (n=15)</p>
 <p class="pass">ĐẠT (ngưỡng gte 0.75)</p></div>
 </div>
 <h2>SLO nhanh</h2>
-<p>Fast successful (latency ≤ 3000ms): <b>24/25 = 96.0%</b> (xem chi tiết tại <code>config/slo.yaml</code>).</p>
+<p>Fast successful (latency ≤ 3000ms): <b>14/15 = 93.333%</b> (xem chi tiết tại <code>config/slo.yaml</code>).</p>
 </body></html>
