@@ -7,7 +7,7 @@ primary_slo:
     total_event: 'event == "request_received"'
   target_percent: 99.5
   error_budget_percent: 0.5
-  note: "Giữ target 99.5% vì baseline thật trước challenge đạt SLI 100% (20/20 latency<=3000ms). Sau challenge CP3 (rag_slow), SLI cửa sổ đo là 96.0% (24/25, 1 req 3811ms) — vượt budget 0.5%, đúng bản chất incident. Error budget 0.5% tương đương tối đa 5 bad/1000 req (50 bad/10000 req trong 28 ngày)."
+  note: "Giữ target 99.5% vì baseline thật trước challenge đạt SLI 100% (20/20 latency<=3000ms). Trong cửa sổ dashboard 60 phút sau challenge, SLI là 93.333% (14/15, 1 req 3811ms) — vượt budget 0.5%, đúng bản chất incident. Error budget 0.5% tương đương tối đa 5 bad/1000 req (50 bad/10000 req trong 28 ngày)."
 guardrails:
   error_rate_pct_max: 2
   daily_cost_usd_max: 2.5
