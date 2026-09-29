@@ -42,7 +42,7 @@
 | `pytest` | — | 26 passed (`evidence/01-pytest.txt`) | |
 | Số traces hợp lệ | — | 29 trace đầy đủ (root `lab-agent-run` + child `retrieval` + `generation`) trên tổng 50 root observations trong project cá nhân (yêu cầu ≥10) | đếm qua observations API v2 |
 | Số PII leak | — | 0 (validator + quét `submission/`, `config/slo.yaml`, `config/alert_rules.yaml`, `docs/alerts.md`) | |
-| Latency P95 / TTFT P95 | 1916.5 / 50.0 (trước challenge) | 2654.6 / 50.0 (sau challenge CP3) | P95 tăng do `rag_slow` |
+| Latency P95 / TTFT P95 | 1713.1 / 50.0 (20 req trước challenge) | 2654.6 / 50.0 (sau challenge CP3) | P95 tăng do `rag_slow` |
 | Retrieval success rate | 100% | 100% | 0 `request_failed` |
 
 ## 4. Logging và PII
@@ -54,9 +54,9 @@
 
 ## 5. Tracing và prompt versioning
 
-- **Cách xác nhận traces do chính tôi tạo trong project cá nhân:**
-- **Cấu trúc root/retrieval/generation observations:**
-- **Cách nối trace với log:**
+- **Cách xác nhận traces do chính tôi tạo trong project cá nhân:** danh sách trace `day13-agent-request` trên Langfuse (`evidence/06-trace-list.png`), input/output chỉ là preview đã redact; đếm qua observations API v2 được 29 trace đầy đủ trên tổng 50 root observations (yêu cầu ≥10).
+- **Cấu trúc root/retrieval/generation observations:** root agent `lab-agent-run` → child `retrieval` (`as_type=retriever`) + child `llm-generate` (`as_type=generation`) đúng quan hệ cha–con (`parent_observation_id`); generation có `model`, prompt link, `usage_details` và `cost_details` (`evidence/07-trace-waterfall.png`).
+- **Cách nối trace với log:** cùng `correlation_id` trong trace metadata và log — vd `req-fb6f1112` → trace `a84d4143887304263d4d9567670c31d5` (`evidence/08-trace-metadata.png`, `evidence/13-incident-log.json`).
 - **Prompt name:** `day13-chat`
 - **Version/label baseline:** version `1`, labels `baseline` + `production` (ban đầu và sau rollback)
 - **Version/label candidate:** version `2`, label `candidate` (v2 chỉ thêm dòng trình bày ngắn gọn ≤ 3 câu, giữ nguyên 3 biến `{{feature}}`, `{{docs}}`, `{{message}}`)
@@ -86,15 +86,15 @@
 - **Một quyết định kỹ thuật quan trọng và lý do:** bọc `start_as_current_observation` trong `_child_observation()` có fallback no-op (`app/agent.py:33-41`) để trace thật trên Langfuse nhưng tests cũ (client giả không có API v4) vẫn pass; chỉ link `prompt`/`version` khi `source == "langfuse"` để không ghi version giả lúc fallback.
 - **Một lỗi/blocker đã gặp:** API chạy thiếu `--env-file .env` nên `/health` báo `tracing_enabled: false` — log vẫn ghi nhưng không có trace; tiếp đó Langfuse trả `410 LEGACY_API_UNAVAILABLE` cho endpoint traces cũ.
 - **Cách tìm nguyên nhân và xử lý:** đối chiếu `/health` giữa 2 cách chạy API rồi cố định lệnh trong `docs/DASHBOARD_LOCAL.md`; chuyển truy vấn trace sang observations API v2 (`trace_id` + `correlation_id` trong metadata).
-- **Cách hiểu luồng Metrics → Logs → Traces:** dashboard chỉ ra P95 vượt ngưỡng và khoảng thời gian (CP3: 2652–3811ms); lọc log theo khoảng đó lấy `correlation_id` bất thường (`req-fb6f1112`); mở trace cùng ID thấy span `retrieval` 2.502s/3.811s là nguyên nhân.
+- **Cách hiểu luồng Metrics → Logs → Traces:** dashboard chỉ ra latency tăng bất thường trong khoảng thời gian CP3 (2652–3811ms; request 3811ms vượt ngưỡng 3000ms trong khi P95 cửa sổ là 2654.6ms); lọc log theo khoảng đó lấy `correlation_id` bất thường (`req-fb6f1112`); mở trace cùng ID thấy span `retrieval` 2.502s/3.811s là nguyên nhân.
 - **Vai trò của prompt version, token/cost, SLO hoặc rollback trong vận hành LLM:** prompt version cho biết request dùng template nào và rollback an toàn (`production` v2→v1 đã verify); token/cost phát hiện `cost_spike`; SLO 99.5% + error budget biến incident thành con số (CP3: 1/25 bad = 4% vượt budget 0.5%).
 - **Điều quan trọng nhất đã học:** validator chỉ kiểm tra contract — bằng chứng runtime (trace, log, dashboard có dữ liệu thật) mới chứng minh hệ thống quan sát được.
-- **Hạn chế hoặc phần chưa hoàn thành, nếu có:** còn thiếu ảnh `06-trace-list.png`, `07-trace-waterfall.png`, `08-trace-metadata.png` (chụp thủ công trên Langfuse); `dashboard.png` là ảnh bản render cũ (10 req) nên chụp lại từ `dashboard.html` mới; mục §4 còn trống; SHA/URL nộp chờ commit cuối.
+- **Hạn chế hoặc phần chưa hoàn thành, nếu có:** project Langfuse hiển thị tên `My Project` thay vì `day13-k4-l3a-2A202602585` (cần đổi/tạo đúng tên nếu quy định chấm tên); README chưa chạy lại từ đầu trên môi trường sạch; URL repo và SHA mới chờ nộp LMS sau commit cuối.
 
 ## 9. Checklist trước khi nộp
 
 - [ ] Kết quả và evidence thuộc commit SHA cuối (hiện còn thay đổi chưa commit — commit rồi cập nhật SHA ở §1).
-- [ ] Tất cả ảnh/output mở được bằng đường dẫn tương đối (thiếu `06`, `07`, `08`; `dashboard.png` cần chụp lại bản mới).
+- [x] Tất cả ảnh/output mở được bằng đường dẫn tương đối (18/18 file `evidence/` đã kiểm tra tồn tại).
 - [x] Incident evidence nối đúng metric → log → trace (`12/13/14-incident-*.json` cùng `req-fb6f1112`).
 - [ ] Trace/prompt evidence thuộc project Langfuse cá nhân và ảnh không lộ key/secret (đã quét: không lộ key; nhưng ảnh prompt hiện tên project `My Project` — đổi/tạo đúng `day13-k4-l3a-2A202602585` nếu quy định chấm tên).
 - [ ] Repository chạy lại được theo README (26 passed + 2 validators mới chỉ chứng minh code hiện tại đúng — chưa chạy lại toàn bộ README từ đầu đến cuối trên môi trường sạch).
