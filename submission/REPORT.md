@@ -7,8 +7,8 @@
 - **Họ và tên:** Phùng Gia Khánh
 - **MSSV:** 2A202602585
 - **Lớp:** K4-L3A
-- **Repository URL:** (điền URL repo cá nhân trước khi nộp)
-- **Commit SHA cuối:** `13b606680ae4a3072eda90334959b632fe4ecba0` (cập nhật lại sau commit cuối vì hiện còn thay đổi chưa commit)
+- **Repository URL:** https://github.com/keilelser-05/K4-L3-DAY13-PhungGiaKhanh-2A202602585-Monitoring-LLMOps
+- **Commit SHA cuối:** `bca4dffae1ebec1132653858fa88d2b175e59080` (commit nội dung đầy đủ; HEAD sau commit này chỉ thêm đúng dòng SHA này)
 - **Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1`
 - **Tên project Langfuse cá nhân:** `day13-k4-l3a-2A202602585`
 
