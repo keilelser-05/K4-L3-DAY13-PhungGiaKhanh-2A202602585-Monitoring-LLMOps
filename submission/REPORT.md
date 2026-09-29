@@ -8,7 +8,7 @@
 - **MSSV:** 2A202602585
 - **Lớp:** K4-L3A
 - **Repository URL:** https://github.com/keilelser-05/K4-L3-DAY13-PhungGiaKhanh-2A202602585-Monitoring-LLMOps
-- **Commit SHA cuối:** `3bcc8a44be5000451b93bb054df90c69184e4db1` (commit nội dung đầy đủ; HEAD sau commit này chỉ thêm đúng dòng SHA này)
+- **Commit SHA cuối:** `416bd368619fe73295f6aa7bb520f1febd8c87a4` (commit nội dung đầy đủ; HEAD sau commit này chỉ thêm đúng dòng SHA này)
 - **Challenge ID:** `day13-k4-l3a-monitoring-llmops-v1`
 - **Tên project Langfuse cá nhân:** `day13-k4-l3a-2A202602585`
 
@@ -93,7 +93,7 @@
 
 ## 9. Checklist trước khi nộp
 
-- [x] Kết quả và evidence thuộc commit SHA cuối (nội dung đầy đủ ở `3bcc8a4`; HEAD chỉ thêm dòng SHA này).
+- [x] Kết quả và evidence thuộc commit SHA cuối (nội dung đầy đủ ở `416bd36`; HEAD chỉ thêm dòng SHA này).
 - [x] Tất cả ảnh/output mở được bằng đường dẫn tương đối (18/18 file `evidence/` đã kiểm tra tồn tại).
 - [x] Incident evidence nối đúng metric → log → trace (`12/13/14-incident-*.json` cùng `req-fb6f1112`).
 - [ ] Trace/prompt evidence thuộc project Langfuse cá nhân và ảnh không lộ key/secret (đã quét: không lộ key; nhưng ảnh prompt hiện tên project `My Project` — đổi/tạo đúng `day13-k4-l3a-2A202602585` nếu quy định chấm tên).
