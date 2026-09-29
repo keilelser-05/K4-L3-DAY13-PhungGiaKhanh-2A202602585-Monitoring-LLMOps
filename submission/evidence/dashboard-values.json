@@ -1,0 +1,49 @@
+{
+  "source": "data/logs.jsonl",
+  "lines": 62,
+  "generated_at": "2026-09-29T09:49:35.906730+00:00",
+  "latency": {
+    "p50": 404.0,
+    "p95": 2654.6,
+    "p99": 3533.6,
+    "ttft_p95": 50.0,
+    "n": 25
+  },
+  "traffic": {
+    "count": 25,
+    "rate_per_minute": 8.333,
+    "by_minute": {
+      "2026-09-29T07:50": 10,
+      "2026-09-29T09:24": 10,
+      "2026-09-29T09:48": 5
+    }
+  },
+  "errors": {
+    "error_rate_pct": 0.0,
+    "failed": 0,
+    "received": 25,
+    "count_by_error_type": {},
+    "tool_success_rate_pct": 100.0
+  },
+  "cost": {
+    "total": 0.049233,
+    "sum_by_minute": {
+      "2026-09-29T07:50": 0.022464,
+      "2026-09-29T09:24": 0.017229,
+      "2026-09-29T09:48": 0.00954
+    }
+  },
+  "tokens": {
+    "tokens_in_total": 851,
+    "tokens_out_total": 3112
+  },
+  "quality": {
+    "mean": 0.872,
+    "n": 25
+  },
+  "sli": {
+    "good": 24,
+    "total": 25,
+    "sli_pct": 96.0
+  }
+}

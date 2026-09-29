@@ -1,0 +1,22 @@
+{
+  "challenge_id": "day13-k4-l3a-monitoring-llmops-v1",
+  "cohort": "K4",
+  "incident": "rag_slow",
+  "window_utc": [
+    "2026-09-29T09:48:20",
+    "2026-09-29T09:48:38"
+  ],
+  "server_latency_ms": [
+    2652,
+    2653,
+    2655,
+    3811
+  ],
+  "client_latency_ms": {
+    "req-fb6f1112": 9808.9,
+    "req-49f3ff8e": 12469.2,
+    "req-fe7312dc": 15128.6,
+    "req-f8a39685": 15128.7,
+    "req-6b24650c": 15129.3
+  }
+}

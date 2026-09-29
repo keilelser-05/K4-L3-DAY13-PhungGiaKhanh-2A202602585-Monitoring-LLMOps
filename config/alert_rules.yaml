@@ -1,25 +1,25 @@
 alerts:
-  - name: TODO_alert_1
-    severity: TODO
-    condition: TODO
-    duration: TODO
+  - name: SlowResponsesHighP95
+    severity: warning
+    condition: 'p95(latency_ms | event == "response_sent") > 3000ms (panel latency)'
+    duration: 5m
     type: symptom-based
-    channel: slack
-    owner: TODO
+    channel: "#l3a-incidents"
+    owner: backend-oncall
     runbook: docs/alerts.md#alert-1
-  - name: TODO_alert_2
-    severity: TODO
-    condition: TODO
-    duration: TODO
+  - name: RetrievalFailuresHigh
+    severity: critical
+    condition: 'error_rate_pct = count(request_failed)/count(request_received)*100 > 2 OR retrieval_success_rate_pct < 90 (panel errors)'
+    duration: 5m
     type: symptom-based
-    channel: slack
-    owner: TODO
+    channel: "#l3a-incidents"
+    owner: backend-oncall
     runbook: docs/alerts.md#alert-2
-  - name: TODO_alert_3
-    severity: TODO
-    condition: TODO
-    duration: TODO
+  - name: CostQualityDegraded
+    severity: warning
+    condition: 'sum(cost_usd | event == "response_sent") vượt nhịp daily 2.5 USD/ngày OR mean(quality_score) < 0.75 (panel cost/quality)'
+    duration: 15m
     type: symptom-based
-    channel: slack
-    owner: TODO
+    channel: "#l3a-incidents"
+    owner: llm-ops
     runbook: docs/alerts.md#alert-3

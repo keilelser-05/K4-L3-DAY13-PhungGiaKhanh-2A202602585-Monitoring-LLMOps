@@ -1,0 +1,22 @@
+[
+  {
+    "label": "baseline",
+    "correlation_id": "req-ba5e11ne",
+    "trace_id": "be8e0229e15afc02df36a02e79c32344",
+    "prompt_name": "day13-chat",
+    "prompt_label": "baseline",
+    "prompt_version": "1",
+    "prompt_source": "langfuse",
+    "span_version": "1"
+  },
+  {
+    "label": "candidate",
+    "correlation_id": "req-cand1da7",
+    "trace_id": "2664e5fa2f119fa89d2fdf163a70c673",
+    "prompt_name": "day13-chat",
+    "prompt_label": "candidate",
+    "prompt_version": "2",
+    "prompt_source": "langfuse",
+    "span_version": "2"
+  }
+]

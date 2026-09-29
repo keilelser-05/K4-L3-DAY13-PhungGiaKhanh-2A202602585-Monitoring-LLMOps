@@ -1,0 +1,23 @@
+{
+  "correlation_id": "req-fb6f1112",
+  "trace_id": "a84d4143887304263d4d9567670c31d5",
+  "spans": [
+    {
+      "name": "lab-agent-run",
+      "type": "AGENT",
+      "latency_s": 3.811,
+      "root": true
+    },
+    {
+      "name": "retrieval",
+      "type": "RETRIEVER",
+      "latency_s": 2.502
+    },
+    {
+      "name": "llm-generate",
+      "type": "GENERATION",
+      "latency_s": 0.151
+    }
+  ],
+  "root_cause_span": "retrieval"
+}

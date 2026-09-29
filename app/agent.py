@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import time
 from dataclasses import dataclass
+from typing import Any
 
 from . import metrics
 from .mock_llm import FakeLLM
@@ -21,6 +23,22 @@ class AgentResult:
     tokens_out: int
     cost_usd: float
     quality_score: float
+
+
+class _NoopObservation:
+    def update(self, **kwargs: Any) -> None:
+        return None
+
+
+def _child_observation(client: Any, **kwargs: Any):
+    """Mở child observation; fallback no-op khi client test không có API v4."""
+    start = getattr(client, "start_as_current_observation", None)
+    if callable(start):
+        try:
+            return start(**kwargs)
+        except Exception:
+            pass
+    return contextlib.nullcontext(_NoopObservation())
 
 
 class LabAgent:
@@ -51,7 +69,23 @@ class LabAgent:
             },
         ):
             started = time.perf_counter()
-            docs = retrieve(message)
+            query_preview = summarize_text(message)
+            with _child_observation(
+                langfuse_client,
+                name="retrieval",
+                as_type="retriever",
+                input={"query_preview": query_preview},
+                metadata={"doc_count": 0, "query_preview": query_preview},
+            ) as retrieval_obs:
+                docs = retrieve(message)
+                retrieval_obs.update(
+                    output={"doc_count": len(docs)},
+                    metadata={
+                        "doc_count": len(docs),
+                        "query_preview": query_preview,
+                        "doc_previews": [summarize_text(doc) for doc in docs],
+                    },
+                )
             prompt = resolve_prompt(
                 langfuse_client,
                 feature=feature,
@@ -59,25 +93,75 @@ class LabAgent:
                 message=message,
                 enabled=tracing_enabled(),
             )
+            is_managed = prompt.source == "langfuse" and prompt.managed_prompt is not None
             langfuse_client.update_current_span(
                 metadata={
                     "doc_count": len(docs),
-                    "query_preview": summarize_text(message),
+                    "query_preview": query_preview,
                     "prompt_name": prompt.name,
                     "prompt_label": prompt.label,
                     "prompt_version": prompt.version,
                     "prompt_source": prompt.source,
                     "prompt_fetch_error": prompt.fetch_error or "",
                 },
-                version=prompt.version,
+                version=prompt.version if is_managed else None,
             )
-            # TODO (CP2): instrument retrieve() and FakeLLM.generate() as child
-            # observations. The nested generation must receive prompt, usage and cost.
-            with propagate_attributes(prompt=prompt.managed_prompt):
-                response = self.llm.generate(prompt.text)
+            linked_prompt = prompt.managed_prompt if is_managed else None
+            with propagate_attributes(prompt=linked_prompt):
+                generation_input = {
+                    "query_preview": query_preview,
+                    "doc_count": len(docs),
+                    "prompt_name": prompt.name,
+                    "prompt_label": prompt.label,
+                }
+                generation_kwargs: dict[str, Any] = {
+                    "name": "llm-generate",
+                    "as_type": "generation",
+                    "model": self.model,
+                    "input": generation_input,
+                    "metadata": {
+                        "feature": feature,
+                        "model": self.model,
+                        "prompt_name": prompt.name,
+                        "prompt_label": prompt.label,
+                        "prompt_source": prompt.source,
+                    },
+                }
+                if is_managed:
+                    generation_kwargs["prompt"] = prompt.managed_prompt
+                    generation_kwargs["version"] = prompt.version
+                with _child_observation(langfuse_client, **generation_kwargs) as generation_obs:
+                    response = self.llm.generate(prompt.text)
+                    cost_usd = self._estimate_cost(
+                        response.usage.input_tokens, response.usage.output_tokens
+                    )
+                    usage_details = {
+                        "input": response.usage.input_tokens,
+                        "output": response.usage.output_tokens,
+                        "prompt_tokens": response.usage.input_tokens,
+                        "completion_tokens": response.usage.output_tokens,
+                        "total": response.usage.input_tokens + response.usage.output_tokens,
+                    }
+                    cost_details = {"total": cost_usd}
+                    generation_update: dict[str, Any] = {
+                        "output": {"answer_preview": summarize_text(response.text)},
+                        "metadata": {
+                            "feature": feature,
+                            "model": self.model,
+                            "prompt_name": prompt.name,
+                            "prompt_label": prompt.label,
+                            "prompt_source": prompt.source,
+                        },
+                        "model": self.model,
+                        "usage_details": usage_details,
+                        "cost_details": cost_details,
+                    }
+                    if is_managed:
+                        generation_update["prompt"] = prompt.managed_prompt
+                        generation_update["version"] = prompt.version
+                    generation_obs.update(**generation_update)
             quality_score = self._heuristic_quality(message, response.text, docs)
             latency_ms = int((time.perf_counter() - started) * 1000)
-            cost_usd = self._estimate_cost(response.usage.input_tokens, response.usage.output_tokens)
 
         metrics.record_request(
             latency_ms=latency_ms,
